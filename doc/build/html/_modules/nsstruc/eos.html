@@ -1,0 +1,177 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>nsstruc.eos &mdash; nsstruc 0.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nsstruc 0.0.0 documentation" href="../../index.html" />
+    <link rel="up" title="nsstruc" href="../nsstruc.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">nsstruc 0.0.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../nsstruc.html" accesskey="U">nsstruc</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for nsstruc.eos</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. module:: eos</span>
+<span class="sd">   :synopsis: Define an eos object for polytropes</span>
+<span class="sd">.. moduleauthor:: Jocelyn Read &lt;jread@fullerton.edu&gt;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Eos"><a class="viewcode-back" href="../../codedoc.html#nsstruc.eos.Eos">[docs]</a><span class="k">class</span> <span class="nc">Eos</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; A class that defines cold equations of state for TOV and augmented TOV</span>
+<span class="sd">    equations.</span>
+<span class="sd">        Based on eta = exp(enthalpy) - 1.0</span>
+
+<span class="sd">        dens, press, energy are in units of g/cm^3</span>
+<span class="sd">        dens = number density in fm^-3 * m_b for m_b in conversions.py</span>
+<span class="sd">        eta is dimensionless</span>
+
+<span class="sd">    Supplies:</span>
+<span class="sd">        dens: rest mass density as a function of eta</span>
+<span class="sd">        press: pressure as a function of eta</span>
+<span class="sd">        energy: energy density as a function of eta</span>
+<span class="sd">        dendp: de/dp derivative as a function of eta</span>
+<span class="sd">        eta: eta (enthalpy as a function of energy</span>
+<span class="sd">        range: a tuple of (eta_low, eta_hi)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="c"># FIXME this is not the right way to choose how to initiate the object</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+     <span class="c"># if len(args) == 1:</span>
+     <span class="c">#     self.initFromTable(args[0])</span>
+      <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">initFromFuncs</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+     <span class="c"># if len(args) == 2:</span>
+     <span class="c">#     self.initFromParam(*args)</span>
+
+<div class="viewcode-block" id="Eos.initFromFuncs"><a class="viewcode-back" href="../../codedoc.html#nsstruc.eos.Eos.initFromFuncs">[docs]</a>    <span class="k">def</span> <span class="nf">initFromFuncs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">densfunc</span><span class="p">,</span><span class="n">pressfunc</span><span class="p">,</span><span class="n">energyfunc</span><span class="p">,</span><span class="n">etafunc</span><span class="p">,</span> <span class="n">dendp</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">densfunc</span> <span class="o">=</span> <span class="n">densfunc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pressfunc</span> <span class="o">=</span> <span class="n">pressfunc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">energyfunc</span> <span class="o">=</span> <span class="n">energyfunc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">etafunc</span> <span class="o">=</span> <span class="n">etafunc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dendp</span> <span class="o">=</span> <span class="n">dendp</span>
+</div></div>
+<div class="viewcode-block" id="rns_output"><a class="viewcode-back" href="../../codedoc.html#nsstruc.eos.rns_output">[docs]</a><span class="k">def</span> <span class="nf">rns_output</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;output Eos object to file format suitable for the rns code&#39;&#39;&#39;</span>
+    <span class="p">(</span><span class="n">loweta</span><span class="p">,</span><span class="n">higheta</span><span class="p">)</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">range</span>
+    <span class="n">etas</span> <span class="o">=</span> <span class="n">logspace</span><span class="p">(</span><span class="n">log10</span><span class="p">(</span><span class="n">loweta</span><span class="p">),</span><span class="n">log10</span><span class="p">(</span><span class="n">higheta</span><span class="p">),</span> <span class="mi">400</span><span class="p">)</span>
+    <span class="n">endens</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">energy</span><span class="p">(</span><span class="n">etas</span><span class="p">)</span>
+    <span class="n">press</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">pressure</span><span class="p">(</span><span class="n">etas</span><span class="p">)</span> <span class="o">*</span> <span class="n">Erg_per_Gram</span>
+    <span class="n">numdens</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="n">etas</span><span class="p">)</span> <span class="o">/</span> <span class="n">M_b_g</span>
+    <span class="n">enth</span> <span class="o">=</span> <span class="n">enthalpy</span><span class="o">*</span> <span class="n">C</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span><span class="mi">100</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">out_table</span> <span class="o">=</span> <span class="n">pylab</span><span class="o">.</span><span class="n">transpose</span><span class="p">((</span><span class="n">endens</span><span class="p">,</span><span class="n">press</span><span class="p">,</span> <span class="n">enth</span><span class="p">,</span> <span class="n">numdens</span><span class="p">))</span>
+    <span class="n">out_table</span> <span class="o">=</span> <span class="n">out_table</span><span class="p">[</span><span class="o">-</span><span class="mi">200</span><span class="p">:]</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+    <span class="k">print</span> <span class="o">&gt;&gt;</span><span class="n">f</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">out_table</span><span class="p">)</span>
+    <span class="k">print</span> <span class="o">&gt;&gt;</span><span class="n">f</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">out_table</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;[&#39;</span><span class="p">,</span><span class="s">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;]&#39;</span><span class="p">,</span> <span class="s">&#39; &#39;</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="createpolytrope"><a class="viewcode-back" href="../../codedoc.html#nsstruc.eos.createpolytrope">[docs]</a><span class="k">def</span> <span class="nf">createpolytrope</span><span class="p">(</span><span class="n">p2</span><span class="p">,</span> <span class="n">g</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Create a polytrope using a reference pressure at density 14.7 and</span>
+<span class="sd">    gamma, store in generic piecewise polytrope format&#39;&#39;&#39;</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">p2</span> <span class="o">-</span> <span class="n">g</span> <span class="o">*</span> <span class="mf">14.7</span> <span class="c"># Determine K  in log scale</span>
+    <span class="k">return</span> <span class="n">transpose</span><span class="p">(</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">2.</span><span class="p">,</span><span class="n">z</span><span class="p">,</span><span class="n">g</span><span class="p">]]))</span>
+
+</div>
+<div class="viewcode-block" id="expandedparams"><a class="viewcode-back" href="../../codedoc.html#nsstruc.eos.expandedparams">[docs]</a><span class="k">def</span> <span class="nf">expandedparams</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot; given a parameter set of [[log rhodivs][log K][gamma]]</span>
+<span class="sd">      return a parameter set of [[ens][etas][K][gamma][a][n]]</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">Kis</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">array</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+  <span class="n">rhois</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="n">array</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+  <span class="n">gis</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+  <span class="n">ais</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span>
+  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rhois</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">ai</span> <span class="o">=</span> <span class="n">ais</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">Kis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">gis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">rhois</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="p">(</span><span class="n">gis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>  \
+          <span class="o">-</span> <span class="n">Kis</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">gis</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">rhois</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="p">(</span><span class="n">gis</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">ais</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ai</span><span class="p">)</span>
+  <span class="n">ais</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="n">ais</span><span class="p">)</span>
+  <span class="n">etas</span> <span class="o">=</span> <span class="n">ais</span> <span class="o">+</span> <span class="n">Kis</span><span class="o">*</span><span class="n">gis</span><span class="o">/</span><span class="p">(</span><span class="n">gis</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">rhois</span><span class="o">**</span><span class="p">(</span><span class="n">gis</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">nis</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="n">gis</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+  <span class="n">enis</span> <span class="o">=</span> <span class="p">(</span> <span class="p">(</span><span class="n">etas</span> <span class="o">-</span> <span class="n">ais</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">Kis</span> <span class="o">*</span> <span class="p">(</span><span class="n">nis</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="p">))</span><span class="o">**</span><span class="n">nis</span> \
+       <span class="o">*</span> <span class="p">(</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">ais</span> <span class="o">+</span> <span class="n">nis</span><span class="o">*</span> <span class="n">etas</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span> <span class="n">nis</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
+  <span class="k">return</span> <span class="n">vstack</span><span class="p">((</span><span class="n">enis</span><span class="p">,</span> <span class="n">etas</span><span class="p">,</span> <span class="n">Kis</span><span class="p">,</span> <span class="n">gis</span><span class="p">,</span> <span class="n">ais</span><span class="p">,</span> <span class="n">nis</span><span class="p">))</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">nsstruc 0.0.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../nsstruc.html" >nsstruc</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Jocelyn Read.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

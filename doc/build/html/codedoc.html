@@ -1,0 +1,255 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Documentation for the Code &mdash; nsstruc 0.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nsstruc 0.0.0 documentation" href="index.html" />
+    <link rel="next" title="Energy density from pressure and rest mass density" href="appendix-thermodynamics.html" />
+    <link rel="prev" title="The TOV equations" href="tov.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="appendix-thermodynamics.html" title="Energy density from pressure and rest mass density"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tov.html" title="The TOV equations"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">nsstruc 0.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-nsstruc">
+<span id="documentation-for-the-code"></span><h1>Documentation for the Code<a class="headerlink" href="#module-nsstruc" title="Permalink to this headline">¶</a></h1>
+<p>A collection of routines for neutron-star structure</p>
+<div class="section" id="module-nsstruc.eos">
+<span id="eos-routines-for-working-with-the-equation-of-state"></span><h2>eos &#8211; routines for working with the equation of state<a class="headerlink" href="#module-nsstruc.eos" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-eos"></span><dl class="class">
+<dt id="nsstruc.eos.Eos">
+<em class="property">class </em><tt class="descclassname">nsstruc.eos.</tt><tt class="descname">Eos</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/nsstruc/eos.html#Eos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.eos.Eos" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class that defines cold equations of state for TOV and augmented TOV
+equations.</p>
+<p>Based on eta = exp(enthalpy) - 1.0</p>
+<p>dens, press, energy are in units of g/cm^3
+dens = number density in fm^-3 * m_b for m_b in conversions.py
+eta is dimensionless</p>
+<dl class="docutils">
+<dt>Supplies:</dt>
+<dd>dens: rest mass density as a function of eta
+press: pressure as a function of eta
+energy: energy density as a function of eta
+dendp: de/dp derivative as a function of eta
+eta: eta (enthalpy as a function of energy
+range: a tuple of (eta_low, eta_hi)</dd>
+</dl>
+<dl class="method">
+<dt id="nsstruc.eos.Eos.initFromFuncs">
+<tt class="descname">initFromFuncs</tt><big>(</big><em>densfunc</em>, <em>pressfunc</em>, <em>energyfunc</em>, <em>etafunc</em>, <em>dendp</em><big>)</big><a class="reference internal" href="_modules/nsstruc/eos.html#Eos.initFromFuncs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.eos.Eos.initFromFuncs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.eos.createpolytrope">
+<tt class="descclassname">nsstruc.eos.</tt><tt class="descname">createpolytrope</tt><big>(</big><em>p2</em>, <em>g</em><big>)</big><a class="reference internal" href="_modules/nsstruc/eos.html#createpolytrope"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.eos.createpolytrope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a polytrope using a reference pressure at density 14.7 and
+gamma, store in generic piecewise polytrope format</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.eos.expandedparams">
+<tt class="descclassname">nsstruc.eos.</tt><tt class="descname">expandedparams</tt><big>(</big><em>params</em><big>)</big><a class="reference internal" href="_modules/nsstruc/eos.html#expandedparams"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.eos.expandedparams" title="Permalink to this definition">¶</a></dt>
+<dd><p>given a parameter set of [[log rhodivs][log K][gamma]]
+return a parameter set of [[ens][etas][K][gamma][a][n]]</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.eos.rns_output">
+<tt class="descclassname">nsstruc.eos.</tt><tt class="descname">rns_output</tt><big>(</big><em>eos</em>, <em>filename</em><big>)</big><a class="reference internal" href="_modules/nsstruc/eos.html#rns_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.eos.rns_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>output Eos object to file format suitable for the rns code</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-nsstruc.tov">
+<span id="tov-calculations-of-stellar-structure"></span><h2>tov &#8211; calculations of stellar structure<a class="headerlink" href="#module-nsstruc.tov" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="nsstruc.tov.compactness">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">compactness</tt><big>(</big><em>tidalprof_surface</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#compactness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.compactness" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.energy_maxmass">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">energy_maxmass</tt><big>(</big><em>eos</em>, <em>lowenergy</em>, <em>highenergy</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#energy_maxmass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.energy_maxmass" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.energy_of_mass">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">energy_of_mass</tt><big>(</big><em>eos</em>, <em>mass</em>, <em>lowenergy</em>, <em>highenergy</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#energy_of_mass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.energy_of_mass" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.eosderiv">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">eosderiv</tt><big>(</big><em>eos</em>, <em>rm_vector</em>, <em>eta</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#eosderiv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.eosderiv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.h2">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">h2</tt><big>(</big><em>tidalprof_surface</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#h2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.h2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.k2">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">k2</tt><big>(</big><em>tidalprof_surface</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#k2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.k2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.lambdamarray">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">lambdamarray</tt><big>(</big><em>eos</em>, <em>lowenergy</em>, <em>highenergy</em>, <em>number</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#lambdamarray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.lambdamarray" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.moment_of_inertia">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">moment_of_inertia</tt><big>(</big><em>rotprof_surface</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#moment_of_inertia"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.moment_of_inertia" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.mrarray">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">mrarray</tt><big>(</big><em>eos</em>, <em>lowenergy</em>, <em>highenergy</em>, <em>number</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#mrarray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.mrarray" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.profile">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">profile</tt><big>(</big><em>eos</em>, <em>en_c</em>, <em>number</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#profile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.profile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.properties_of_energy">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">properties_of_energy</tt><big>(</big><em>eos</em>, <em>en</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#properties_of_energy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.properties_of_energy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.rotderiv">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">rotderiv</tt><big>(</big><em>eos</em>, <em>rm_vector</em>, <em>eta</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#rotderiv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.rotderiv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.rotprofile">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">rotprofile</tt><big>(</big><em>eos</em>, <em>en_c</em>, <em>number</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#rotprofile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.rotprofile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.tidederiv">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">tidederiv</tt><big>(</big><em>eos</em>, <em>rm_vector</em>, <em>eta</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#tidederiv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.tidederiv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="nsstruc.tov.tideprofile">
+<tt class="descclassname">nsstruc.tov.</tt><tt class="descname">tideprofile</tt><big>(</big><em>eos</em>, <em>en_c</em>, <em>number</em><big>)</big><a class="reference internal" href="_modules/nsstruc/tov.html#tideprofile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nsstruc.tov.tideprofile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Documentation for the Code</a><ul>
+<li><a class="reference internal" href="#module-nsstruc.eos">eos &#8211; routines for working with the equation of state</a></li>
+<li><a class="reference internal" href="#module-nsstruc.tov">tov &#8211; calculations of stellar structure</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tov.html"
+                        title="previous chapter">The TOV equations</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="appendix-thermodynamics.html"
+                        title="next chapter">Energy density from pressure and rest mass density</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/codedoc.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="appendix-thermodynamics.html" title="Energy density from pressure and rest mass density"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tov.html" title="The TOV equations"
+             >previous</a> |</li>
+        <li><a href="index.html">nsstruc 0.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Jocelyn Read.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

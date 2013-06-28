@@ -1,0 +1,293 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>nsstruc.tov &mdash; nsstruc 0.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nsstruc 0.0.0 documentation" href="../../index.html" />
+    <link rel="up" title="nsstruc" href="../nsstruc.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">nsstruc 0.0.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../nsstruc.html" accesskey="U">nsstruc</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for nsstruc.tov</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">eos</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">integrate</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">optimize</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">interpolate</span>
+
+<span class="kn">from</span> <span class="nn">conversions</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="c"># G/c^2 in m / kg </span>
+<span class="c"># gram per kg * cm per m3 is m^-2 per g/cm^3</span>
+<span class="c"># 1000**2 to convert to km^-2 per g/cm^3</span>
+<span class="n">Gcc</span> <span class="o">=</span> <span class="n">G</span><span class="o">/</span><span class="n">C</span><span class="o">**</span><span class="mi">2</span>  <span class="o">/</span> <span class="n">Gram_per_kg</span> <span class="o">*</span> <span class="n">Cm3_per_m3</span>  <span class="o">*</span> <span class="mi">1000</span><span class="o">**</span><span class="mi">2</span>
+            <span class="c">## Check in Google: G/C^2 * (1 g/cm^3) in (km^-2)</span>
+            <span class="c">## about 7.4247 x 10^-19</span>
+
+<div class="viewcode-block" id="eosderiv"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.eosderiv">[docs]</a><span class="k">def</span> <span class="nf">eosderiv</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">rm_vector</span><span class="p">,</span> <span class="n">eta</span><span class="p">):</span>
+    <span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">mass</span><span class="p">)</span> <span class="o">=</span> <span class="n">rm_vector</span>
+    <span class="n">drdeta</span> <span class="o">=</span>  <span class="o">-</span> <span class="n">rad</span> <span class="o">*</span> <span class="p">(</span><span class="n">rad</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mass</span><span class="p">)</span> \
+              <span class="o">/</span> <span class="p">(</span><span class="n">mass</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">pi</span> <span class="o">*</span> <span class="n">rad</span> <span class="o">**</span><span class="mi">3</span>  <span class="o">*</span> <span class="n">eos</span><span class="o">.</span><span class="n">pressfunc</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span><span class="o">*</span><span class="n">Gcc</span><span class="p">)</span> \
+              <span class="o">/</span> <span class="p">(</span><span class="n">eta</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> 
+    <span class="n">dmdeta</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">pi</span> <span class="o">*</span> <span class="n">eos</span><span class="o">.</span><span class="n">energyfunc</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span><span class="o">*</span><span class="n">Gcc</span> <span class="o">*</span> <span class="n">rad</span> <span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">drdeta</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">drdeta</span><span class="p">,</span><span class="n">dmdeta</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="rotderiv"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.rotderiv">[docs]</a><span class="k">def</span> <span class="nf">rotderiv</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">rm_vector</span><span class="p">,</span> <span class="n">eta</span><span class="p">):</span>
+  <span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">restmass</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">omega</span><span class="p">)</span> <span class="o">=</span> <span class="n">rm_vector</span>
+
+  <span class="n">pr</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">pressfunc</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span> <span class="o">*</span> <span class="n">Gcc</span>
+  <span class="n">en</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">energyfunc</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span> <span class="o">*</span> <span class="n">Gcc</span>
+  <span class="n">rho</span> <span class="o">=</span> <span class="p">(</span><span class="n">pr</span> <span class="o">+</span> <span class="n">en</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">eta</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+  <span class="n">factor</span> <span class="o">=</span> <span class="n">rad</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mass</span>
+  <span class="n">coef</span> <span class="o">=</span> <span class="mf">4.0</span><span class="o">*</span><span class="n">pi</span>
+
+  <span class="n">drdeta</span> <span class="o">=</span>  <span class="o">-</span> <span class="n">rad</span> <span class="o">*</span> <span class="n">factor</span> <span class="o">/</span> <span class="p">(</span><span class="n">mass</span> <span class="o">+</span> <span class="n">coef</span> <span class="o">*</span> <span class="n">rad</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">pr</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">eta</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">dmdeta</span> <span class="o">=</span> <span class="n">coef</span> <span class="o">*</span> <span class="n">en</span> <span class="o">*</span> <span class="n">rad</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">drdeta</span>
+  <span class="n">dmadeta</span> <span class="o">=</span> <span class="n">coef</span> <span class="o">*</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">rad</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">drdeta</span> <span class="o">/</span> <span class="p">(</span> <span class="n">factor</span> <span class="o">/</span> <span class="n">rad</span> <span class="p">)</span><span class="o">**</span><span class="mf">0.5</span>
+  <span class="n">domega</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">drdeta</span>
+  <span class="n">dalpha</span> <span class="o">=</span> <span class="n">drdeta</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">alpha</span> <span class="o">/</span> <span class="n">rad</span> \
+      <span class="o">+</span> <span class="n">coef</span> <span class="o">*</span> <span class="n">rad</span> <span class="o">*</span> <span class="p">(</span><span class="n">pr</span> <span class="o">+</span> <span class="n">en</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">omega</span> <span class="o">+</span> <span class="n">rad</span> <span class="o">*</span> <span class="n">alpha</span> <span class="p">)</span> <span class="o">/</span> <span class="n">factor</span> <span class="p">)</span>
+
+  <span class="k">return</span> <span class="n">array</span><span class="p">([</span><span class="n">drdeta</span><span class="p">,</span><span class="n">dmdeta</span><span class="p">,</span> <span class="n">dmadeta</span><span class="p">,</span> <span class="n">dalpha</span><span class="p">,</span> <span class="n">domega</span><span class="p">])</span>
+</div>
+<div class="viewcode-block" id="tidederiv"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.tidederiv">[docs]</a><span class="k">def</span> <span class="nf">tidederiv</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span><span class="n">rm_vector</span><span class="p">,</span> <span class="n">eta</span><span class="p">):</span>
+    <span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">restmass</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="o">=</span> <span class="n">rm_vector</span>
+
+    <span class="n">pr</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">pressfunc</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span> <span class="o">*</span> <span class="n">Gcc</span>
+    <span class="n">en</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">energyfunc</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span> <span class="o">*</span> <span class="n">Gcc</span>
+    <span class="n">func</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">dendp</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span>
+    <span class="n">rho</span> <span class="o">=</span> <span class="p">(</span><span class="n">pr</span> <span class="o">+</span> <span class="n">en</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">eta</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">factor</span> <span class="o">=</span> <span class="n">rad</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mass</span>
+    <span class="n">coef</span> <span class="o">=</span> <span class="mf">4.0</span><span class="o">*</span><span class="n">pi</span>
+
+    <span class="n">drdeta</span> <span class="o">=</span>  <span class="o">-</span> <span class="n">rad</span> <span class="o">*</span> <span class="n">factor</span> <span class="o">/</span> <span class="p">(</span><span class="n">mass</span> <span class="o">+</span> <span class="n">coef</span> <span class="o">*</span> <span class="n">rad</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">pr</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">eta</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">dmdeta</span> <span class="o">=</span> <span class="n">coef</span> <span class="o">*</span> <span class="n">en</span> <span class="o">*</span> <span class="n">rad</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">drdeta</span>
+    <span class="n">dmadeta</span> <span class="o">=</span> <span class="n">coef</span> <span class="o">*</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">rad</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">drdeta</span> <span class="o">/</span> <span class="p">(</span> <span class="n">factor</span> <span class="o">/</span> <span class="n">rad</span> <span class="p">)</span><span class="o">**</span><span class="mf">0.5</span>
+    <span class="n">dh</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">drdeta</span>
+    <span class="n">dbeta</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">drdeta</span> <span class="o">*</span>\
+        <span class="p">(</span> <span class="n">h</span> <span class="o">*</span> <span class="p">(</span> \
+          <span class="p">(</span><span class="o">-</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">pi</span> <span class="o">*</span> <span class="n">func</span> <span class="o">*</span> <span class="n">rad</span> <span class="o">*</span> <span class="p">(</span><span class="n">pr</span> <span class="o">+</span> <span class="n">en</span><span class="p">))</span><span class="o">/</span> <span class="n">factor</span> <span class="o">+</span> \
+          <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">mass</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> \
+            <span class="n">rad</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">3.0</span> <span class="o">+</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">pi</span> <span class="o">*</span> <span class="n">rad</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> \
+              <span class="p">(</span> <span class="n">pr</span> <span class="o">*</span> <span class="p">(</span><span class="mf">16.0</span> <span class="o">*</span> <span class="n">pi</span> <span class="o">*</span> <span class="n">pr</span> <span class="o">*</span> <span class="n">rad</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mf">9.0</span> <span class="p">)</span> <span class="o">-</span> <span class="mf">5.</span> <span class="o">*</span> <span class="n">en</span> <span class="p">))</span>\
+            <span class="o">+</span> <span class="n">mass</span> <span class="o">*</span> <span class="p">(</span> <span class="o">-</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">rad</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">pi</span> <span class="o">*</span> <span class="n">rad</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="p">(</span><span class="mi">13</span> <span class="o">*</span><span class="n">pr</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">en</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>\
+          <span class="o">/</span> <span class="n">rad</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">factor</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+        <span class="o">+</span> <span class="n">beta</span> <span class="o">/</span> <span class="n">rad</span> <span class="o">/</span> <span class="n">factor</span> <span class="o">*</span> <span class="p">(</span> <span class="n">mass</span> <span class="o">-</span> <span class="n">rad</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pi</span> <span class="o">*</span> <span class="n">rad</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="p">(</span><span class="n">en</span> <span class="o">-</span>
+          <span class="n">pr</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">array</span><span class="p">([</span><span class="n">drdeta</span><span class="p">,</span><span class="n">dmdeta</span><span class="p">,</span> <span class="n">dmadeta</span><span class="p">,</span> <span class="n">dbeta</span><span class="p">,</span> <span class="n">dh</span><span class="p">])</span>
+
+</div>
+<div class="viewcode-block" id="profile"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.profile">[docs]</a><span class="k">def</span> <span class="nf">profile</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">en_c</span><span class="p">,</span> <span class="n">number</span><span class="p">):</span>
+  <span class="c"># set up a core with small initial radius and mass</span>
+  <span class="n">initm</span> <span class="o">=</span> <span class="mf">4.0</span><span class="o">/</span><span class="mf">3.0</span><span class="o">*</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="n">initr</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">en_c</span> <span class="o">*</span> <span class="n">Gcc</span>
+  <span class="n">init_rm</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="n">initr</span><span class="p">,</span><span class="n">initm</span><span class="p">])</span>
+  <span class="n">eta_c</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">etafunc</span><span class="p">(</span><span class="n">en_c</span><span class="p">)</span>
+  <span class="n">eta_0</span> <span class="o">=</span> <span class="n">eta_surf</span>
+  <span class="c"># resolve core with linear energy spacing</span>
+  <span class="n">linetas</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="n">eta_c</span><span class="p">,</span> <span class="n">eta_c</span><span class="o">/</span><span class="mi">10</span><span class="p">,</span> <span class="n">number</span><span class="o">+</span><span class="mi">1</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+  <span class="c"># resolve crust with log eta spacing</span>
+  <span class="n">logetas</span> <span class="o">=</span> <span class="n">logspace</span><span class="p">(</span><span class="n">log10</span><span class="p">(</span><span class="n">linetas</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span><span class="n">log10</span><span class="p">(</span><span class="n">eta_0</span><span class="p">),</span> <span class="n">number</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">etas</span> <span class="o">=</span> <span class="n">hstack</span><span class="p">((</span><span class="n">array</span><span class="p">(</span><span class="n">linetas</span><span class="p">),</span><span class="n">array</span><span class="p">(</span><span class="n">logetas</span><span class="p">[</span><span class="mi">1</span><span class="p">:])))</span>
+  <span class="c"># define derivative for this eos</span>
+  <span class="k">def</span> <span class="nf">deriv</span><span class="p">(</span><span class="n">rm_vector</span><span class="p">,</span><span class="n">eta</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">eosderiv</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">rm_vector</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span>
+  <span class="n">rms</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">odeint</span><span class="p">(</span><span class="n">deriv</span><span class="p">,</span> <span class="n">init_rm</span><span class="p">,</span> <span class="n">etas</span><span class="p">)</span>
+  <span class="n">emrar</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">((</span><span class="n">eos</span><span class="o">.</span><span class="n">energyfunc</span><span class="p">(</span><span class="n">etas</span><span class="p">),</span><span class="n">transpose</span><span class="p">(</span><span class="n">rms</span><span class="p">)))</span>
+  <span class="k">return</span> <span class="n">emrar</span>
+</div>
+<div class="viewcode-block" id="rotprofile"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.rotprofile">[docs]</a><span class="k">def</span> <span class="nf">rotprofile</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">en_c</span><span class="p">,</span> <span class="n">number</span><span class="p">):</span>
+  <span class="c"># set up a core with small initial radius and mass</span>
+  <span class="n">initm</span> <span class="o">=</span> <span class="mf">4.0</span><span class="o">/</span><span class="mf">3.0</span><span class="o">*</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="n">initr</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">en_c</span> <span class="o">*</span> <span class="n">Gcc</span>
+  <span class="n">init_rm</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="n">initr</span><span class="p">,</span><span class="n">initm</span><span class="p">,</span><span class="n">initm</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
+  <span class="n">eta_c</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">etafunc</span><span class="p">(</span><span class="n">en_c</span><span class="p">)</span>
+  <span class="n">eta_0</span> <span class="o">=</span> <span class="n">eta_surf</span>
+  <span class="c"># resolve core with linear energy spacing</span>
+  <span class="n">linetas</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="n">eta_c</span><span class="p">,</span> <span class="n">eta_c</span><span class="o">/</span><span class="mi">10</span><span class="p">,</span> <span class="n">number</span><span class="o">+</span><span class="mi">1</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+  <span class="c"># resolve crust with log eta spacing</span>
+  <span class="n">logetas</span> <span class="o">=</span> <span class="n">logspace</span><span class="p">(</span><span class="n">log10</span><span class="p">(</span><span class="n">linetas</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span><span class="n">log10</span><span class="p">(</span><span class="n">eta_0</span><span class="p">),</span> <span class="n">number</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">etas</span> <span class="o">=</span> <span class="n">hstack</span><span class="p">((</span><span class="n">array</span><span class="p">(</span><span class="n">linetas</span><span class="p">),</span><span class="n">array</span><span class="p">(</span><span class="n">logetas</span><span class="p">[</span><span class="mi">1</span><span class="p">:])))</span>
+  <span class="c"># define derivative for this eos</span>
+  <span class="k">def</span> <span class="nf">deriv</span><span class="p">(</span><span class="n">rm_vector</span><span class="p">,</span><span class="n">eta</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">rotderiv</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">rm_vector</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span>
+  <span class="n">rms</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">odeint</span><span class="p">(</span><span class="n">deriv</span><span class="p">,</span> <span class="n">init_rm</span><span class="p">,</span> <span class="n">etas</span><span class="p">)</span>
+  <span class="n">emrar</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">((</span><span class="n">eos</span><span class="o">.</span><span class="n">energyfunc</span><span class="p">(</span><span class="n">etas</span><span class="p">),</span><span class="n">transpose</span><span class="p">(</span><span class="n">rms</span><span class="p">)))</span>
+  <span class="k">return</span> <span class="n">emrar</span>
+</div>
+<div class="viewcode-block" id="tideprofile"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.tideprofile">[docs]</a><span class="k">def</span> <span class="nf">tideprofile</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">en_c</span><span class="p">,</span> <span class="n">number</span><span class="p">):</span>
+  <span class="c"># set up a core with small initial radius and mass</span>
+  <span class="n">initm</span> <span class="o">=</span> <span class="mf">4.0</span><span class="o">/</span><span class="mf">3.0</span><span class="o">*</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="n">initr</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="n">en_c</span> <span class="o">*</span> <span class="n">Gcc</span>
+  <span class="n">init_rm</span> <span class="o">=</span> <span class="n">array</span><span class="p">([</span><span class="n">initr</span><span class="p">,</span><span class="n">initm</span><span class="p">,</span><span class="n">initm</span><span class="p">,</span> <span class="mf">0.1</span><span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">initr</span><span class="p">,</span><span class="mf">0.1</span> <span class="o">*</span><span class="n">initr</span><span class="o">**</span><span class="mi">2</span><span class="p">])</span>
+  <span class="n">eta_c</span> <span class="o">=</span> <span class="n">eos</span><span class="o">.</span><span class="n">etafunc</span><span class="p">(</span><span class="n">en_c</span><span class="p">)</span>
+  <span class="n">eta_0</span> <span class="o">=</span> <span class="n">eta_surf</span>
+  <span class="c"># resolve core with linear energy spacing</span>
+  <span class="n">linetas</span> <span class="o">=</span> <span class="n">linspace</span><span class="p">(</span><span class="n">eta_c</span><span class="p">,</span> <span class="n">eta_c</span><span class="o">/</span><span class="mi">10</span><span class="p">,</span> <span class="n">number</span><span class="o">+</span><span class="mi">1</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+  <span class="c"># resolve crust with log eta spacing</span>
+  <span class="n">logetas</span> <span class="o">=</span> <span class="n">logspace</span><span class="p">(</span><span class="n">log10</span><span class="p">(</span><span class="n">linetas</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span><span class="n">log10</span><span class="p">(</span><span class="n">eta_0</span><span class="p">),</span> <span class="n">number</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+  <span class="n">etas</span> <span class="o">=</span> <span class="n">hstack</span><span class="p">((</span><span class="n">array</span><span class="p">(</span><span class="n">linetas</span><span class="p">),</span><span class="n">array</span><span class="p">(</span><span class="n">logetas</span><span class="p">[</span><span class="mi">1</span><span class="p">:])))</span>
+  <span class="c"># define derivative for this eos</span>
+  <span class="k">def</span> <span class="nf">deriv</span><span class="p">(</span><span class="n">rm_vector</span><span class="p">,</span><span class="n">eta</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">tidederiv</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">rm_vector</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span>
+  <span class="n">rms</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">odeint</span><span class="p">(</span><span class="n">deriv</span><span class="p">,</span> <span class="n">init_rm</span><span class="p">,</span> <span class="n">etas</span><span class="p">)</span>
+  <span class="n">emrar</span> <span class="o">=</span> <span class="n">vstack</span><span class="p">((</span><span class="n">eos</span><span class="o">.</span><span class="n">energyfunc</span><span class="p">(</span><span class="n">etas</span><span class="p">),</span><span class="n">transpose</span><span class="p">(</span><span class="n">rms</span><span class="p">)))</span>
+  <span class="k">return</span> <span class="n">emrar</span>
+</div>
+<div class="viewcode-block" id="moment_of_inertia"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.moment_of_inertia">[docs]</a><span class="k">def</span> <span class="nf">moment_of_inertia</span><span class="p">(</span> <span class="n">rotprof_surface</span><span class="p">):</span>
+  <span class="p">(</span><span class="n">en</span><span class="p">,</span> <span class="n">rad</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">restmass</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">omega</span><span class="p">)</span> <span class="o">=</span> <span class="n">rotprof_surface</span>
+  <span class="n">conv</span> <span class="o">=</span> <span class="mf">1.34685326e43</span> <span class="c"># g cm^2 per km^3</span>
+  <span class="n">I</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="mf">6.0</span> <span class="o">*</span> <span class="n">rad</span><span class="o">**</span><span class="mi">4</span> <span class="o">*</span> <span class="n">alpha</span> <span class="o">/</span> <span class="p">(</span><span class="n">omega</span> <span class="o">+</span> <span class="mf">1.0</span><span class="o">/</span><span class="mf">3.0</span> <span class="o">*</span> <span class="n">rad</span> <span class="o">*</span> <span class="n">alpha</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">I</span> <span class="o">*</span> <span class="n">conv</span>
+
+</div>
+<div class="viewcode-block" id="compactness"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.compactness">[docs]</a><span class="k">def</span> <span class="nf">compactness</span><span class="p">(</span><span class="n">tidalprof_surface</span><span class="p">):</span>
+  <span class="p">(</span><span class="n">en</span><span class="p">,</span> <span class="n">rad</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">restmass</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">hfunc</span><span class="p">)</span> <span class="o">=</span> <span class="n">tidalprof_surface</span>
+  <span class="k">return</span> <span class="n">mass</span> <span class="o">/</span> <span class="n">rad</span>
+
+</div>
+<div class="viewcode-block" id="k2"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.k2">[docs]</a><span class="k">def</span> <span class="nf">k2</span><span class="p">(</span><span class="n">tidalprof_surface</span><span class="p">):</span>
+  <span class="p">(</span><span class="n">en</span><span class="p">,</span> <span class="n">rad</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">restmass</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">hfunc</span><span class="p">)</span> <span class="o">=</span> <span class="n">tidalprof_surface</span>
+  <span class="n">y</span> <span class="o">=</span> <span class="n">rad</span> <span class="o">*</span> <span class="n">beta</span> <span class="o">/</span> <span class="n">hfunc</span>
+  <span class="n">C</span> <span class="o">=</span> <span class="n">mass</span> <span class="o">/</span> <span class="n">rad</span>
+  <span class="k">return</span> <span class="mf">8.</span> <span class="o">/</span> <span class="mf">5.</span> <span class="o">*</span> <span class="n">C</span><span class="o">**</span><span class="mi">5</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">C</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">+</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">C</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="mf">1.</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span> \
+      <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">C</span> <span class="o">*</span> <span class="p">(</span><span class="mf">6.</span> <span class="o">-</span> <span class="mf">3.</span> <span class="o">*</span> <span class="n">y</span> <span class="o">+</span> <span class="mf">3.</span> <span class="o">*</span> <span class="n">C</span> <span class="o">*</span> <span class="p">(</span><span class="mf">5.</span> <span class="o">*</span> <span class="n">y</span> <span class="o">-</span> <span class="mf">8.</span><span class="p">))</span> \
+      <span class="o">+</span> <span class="mf">4.</span> <span class="o">*</span> <span class="n">C</span><span class="o">**</span><span class="mf">3.</span> <span class="o">*</span> <span class="p">(</span><span class="mf">13.</span> <span class="o">-</span> <span class="mf">11.</span><span class="o">*</span><span class="n">y</span> <span class="o">+</span> <span class="n">C</span> <span class="o">*</span> <span class="p">(</span><span class="mf">3.</span><span class="o">*</span><span class="n">y</span> <span class="o">-</span> <span class="mf">2.</span><span class="p">)</span> <span class="o">+</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">C</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">y</span><span class="p">))</span> \
+      <span class="o">+</span> <span class="mf">3.</span> <span class="o">*</span> <span class="p">(</span> <span class="mf">1.</span> <span class="o">-</span> <span class="mf">2.</span><span class="o">*</span><span class="n">C</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span> <span class="mf">2.</span> <span class="o">-</span> <span class="n">y</span> <span class="o">+</span> <span class="mf">2.</span><span class="o">*</span><span class="n">C</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="mf">1.</span><span class="p">))</span> <span class="o">*</span> <span class="n">log</span><span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="mf">2.</span><span class="o">*</span><span class="n">C</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="h2"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.h2">[docs]</a><span class="k">def</span> <span class="nf">h2</span><span class="p">(</span><span class="n">tidalprof_surface</span><span class="p">):</span>
+  <span class="p">(</span><span class="n">en</span><span class="p">,</span> <span class="n">rad</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">restmass</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">hfunc</span><span class="p">)</span> <span class="o">=</span> <span class="n">tidalprof_surface</span>
+  <span class="n">y</span> <span class="o">=</span> <span class="n">rad</span> <span class="o">*</span> <span class="n">beta</span> <span class="o">/</span> <span class="n">hfunc</span>
+  <span class="n">C</span> <span class="o">=</span> <span class="n">mass</span> <span class="o">/</span> <span class="n">rad</span>
+  <span class="n">Cfac</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">-</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">C</span>
+  <span class="k">return</span> <span class="n">C</span><span class="o">**</span><span class="mi">5</span> <span class="o">*</span> <span class="p">(</span> <span class="mf">8.</span> <span class="o">*</span> <span class="n">Cfac</span> <span class="o">*</span> <span class="n">C</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">16</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">C</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span> <span class="p">)</span> \
+      <span class="o">*</span> <span class="p">(</span><span class="mf">8.</span> <span class="o">*</span> <span class="n">C</span><span class="o">**</span><span class="mi">5</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="mf">1.</span><span class="p">)</span> <span class="o">+</span> <span class="mf">4.</span> <span class="o">*</span> <span class="n">C</span><span class="o">**</span><span class="mi">4</span> <span class="o">*</span> <span class="p">(</span> <span class="mf">3.</span> <span class="o">*</span> <span class="n">y</span> <span class="o">-</span> <span class="mf">2.</span><span class="p">)</span> \
+        <span class="o">+</span> <span class="mf">4.</span> <span class="o">*</span> <span class="n">C</span><span class="o">**</span><span class="mi">3</span> <span class="o">*</span> <span class="p">(</span><span class="mf">13.</span> <span class="o">-</span> <span class="mf">11.</span> <span class="o">*</span> <span class="n">y</span> <span class="p">)</span> <span class="o">+</span> <span class="mf">6.</span> <span class="o">*</span> <span class="n">C</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">5.</span> <span class="o">*</span> <span class="n">y</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span> \
+        <span class="o">+</span> <span class="mf">6.</span> <span class="o">*</span> <span class="n">C</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span> \
+        <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">Cfac</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">C</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">log</span><span class="p">(</span><span class="n">Cfac</span><span class="p">)</span> \
+        <span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="energy_of_mass"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.energy_of_mass">[docs]</a><span class="k">def</span> <span class="nf">energy_of_mass</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">lowenergy</span><span class="p">,</span> <span class="n">highenergy</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">massdiff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">eos</span><span class="p">,</span> <span class="n">mass</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">profile</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">100</span><span class="p">)[</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">mass</span><span class="o">*</span><span class="n">Solarmass_km</span>
+  <span class="k">return</span> <span class="n">optimize</span><span class="o">.</span><span class="n">zeros</span><span class="o">.</span><span class="n">brenth</span><span class="p">(</span><span class="n">massdiff</span><span class="p">,</span> <span class="n">lowenergy</span><span class="p">,</span> <span class="n">highenergy</span><span class="p">,</span> \
+      <span class="p">(</span><span class="n">eos</span><span class="p">,</span><span class="n">mass</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="energy_maxmass"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.energy_maxmass">[docs]</a><span class="k">def</span> <span class="nf">energy_maxmass</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">lowenergy</span><span class="p">,</span> <span class="n">highenergy</span><span class="p">):</span>
+  <span class="n">massen</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mf">10.0</span> <span class="o">-</span> <span class="n">profile</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">100</span><span class="p">)[</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+  <span class="n">maxen</span> <span class="o">=</span> <span class="n">optimize</span><span class="o">.</span><span class="n">brent</span><span class="p">(</span><span class="n">massen</span><span class="p">,</span> <span class="n">brack</span><span class="o">=</span><span class="p">(</span><span class="n">lowenergy</span><span class="p">,</span><span class="n">highenergy</span><span class="p">),</span>
+        <span class="n">tol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
+  <span class="n">maxpr</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span><span class="n">maxen</span><span class="p">,</span> <span class="mi">100</span><span class="p">)[:,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+  <span class="k">return</span> <span class="n">maxen</span><span class="p">,</span> <span class="n">maxpr</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="n">Solarmass_km</span><span class="p">,</span> <span class="n">maxpr</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="properties_of_energy"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.properties_of_energy">[docs]</a><span class="k">def</span> <span class="nf">properties_of_energy</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span><span class="n">en</span><span class="p">):</span>
+    <span class="n">prof</span> <span class="o">=</span> <span class="n">tideprofile</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">en</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">en</span><span class="p">,</span> <span class="n">rad</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">restmass</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">hfunc</span><span class="p">)</span> <span class="o">=</span> <span class="n">prof</span><span class="p">[:,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">k2val</span> <span class="o">=</span> <span class="n">k2</span><span class="p">(</span><span class="n">prof</span><span class="p">[:,</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">tidelambda</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">/</span> <span class="mf">3.</span> <span class="o">*</span> <span class="n">k2val</span> <span class="o">*</span> <span class="p">(</span><span class="n">rad</span> <span class="o">/</span> <span class="n">mass</span><span class="p">)</span><span class="o">**</span><span class="mf">5.</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">mass</span><span class="o">/</span><span class="n">Solarmass_km</span><span class="p">,</span> <span class="n">rad</span><span class="p">,</span> <span class="n">tidelambda</span><span class="p">,</span> <span class="n">k2val</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="mrarray"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.mrarray">[docs]</a><span class="k">def</span> <span class="nf">mrarray</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">lowenergy</span><span class="p">,</span> <span class="n">highenergy</span><span class="p">,</span><span class="n">number</span><span class="p">):</span>
+  <span class="n">eps</span> <span class="o">=</span> <span class="n">logspace</span><span class="p">(</span><span class="n">log10</span><span class="p">(</span><span class="n">lowenergy</span><span class="p">),</span><span class="n">log10</span><span class="p">(</span><span class="n">highenergy</span><span class="p">),</span><span class="n">number</span><span class="p">)</span>
+  <span class="n">table</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="k">for</span> <span class="n">ep_c</span> <span class="ow">in</span> <span class="n">eps</span><span class="p">:</span>
+    <span class="n">prof</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">ep_c</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">en</span><span class="p">,</span> <span class="n">rad</span><span class="p">,</span> <span class="n">mass</span><span class="p">)</span> <span class="o">=</span> <span class="n">prof</span><span class="p">[:,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">table</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ep_c</span><span class="p">,</span> <span class="n">mass</span><span class="o">/</span><span class="n">Solarmass_km</span><span class="p">,</span><span class="n">rad</span><span class="p">))</span>
+  <span class="k">return</span> <span class="n">array</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="lambdamarray"><a class="viewcode-back" href="../../codedoc.html#nsstruc.tov.lambdamarray">[docs]</a><span class="k">def</span> <span class="nf">lambdamarray</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">lowenergy</span><span class="p">,</span> <span class="n">highenergy</span><span class="p">,</span><span class="n">number</span><span class="p">):</span>
+  <span class="n">eps</span> <span class="o">=</span> <span class="n">logspace</span><span class="p">(</span><span class="n">log10</span><span class="p">(</span><span class="n">lowenergy</span><span class="p">),</span><span class="n">log10</span><span class="p">(</span><span class="n">highenergy</span><span class="p">),</span><span class="n">number</span><span class="p">)</span>
+  <span class="n">table</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="k">for</span> <span class="n">ep_c</span> <span class="ow">in</span> <span class="n">eps</span><span class="p">:</span>
+    <span class="n">prof</span> <span class="o">=</span> <span class="n">tideprofile</span><span class="p">(</span><span class="n">eos</span><span class="p">,</span> <span class="n">ep_c</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">en</span><span class="p">,</span> <span class="n">rad</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">restmass</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">hfunc</span><span class="p">)</span> <span class="o">=</span> <span class="n">prof</span><span class="p">[:,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">k2val</span> <span class="o">=</span> <span class="n">k2</span><span class="p">(</span><span class="n">prof</span><span class="p">[:,</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">tidelambda</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">/</span> <span class="mf">3.</span> <span class="o">*</span> <span class="n">k2val</span> <span class="o">*</span> <span class="p">(</span><span class="n">rad</span> <span class="o">/</span> <span class="n">mass</span><span class="p">)</span><span class="o">**</span><span class="mf">5.</span>
+    <span class="n">table</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ep_c</span><span class="p">,</span> <span class="n">mass</span><span class="o">/</span><span class="n">Solarmass_km</span><span class="p">,</span> <span class="n">rad</span><span class="p">,</span> <span class="n">tidelambda</span><span class="p">,</span> <span class="n">k2val</span><span class="p">))</span>
+  <span class="k">return</span> <span class="n">array</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+</pre></div></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">nsstruc 0.0.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../nsstruc.html" >nsstruc</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Jocelyn Read.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

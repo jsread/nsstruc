@@ -1,0 +1,161 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Thermodynamics &mdash; nsstruc 0.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nsstruc 0.0.0 documentation" href="index.html" />
+    <link rel="next" title="The TOV equations" href="tov.html" />
+    <link rel="prev" title="Intro" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tov.html" title="The TOV equations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Intro"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">nsstruc 0.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="thermodynamics">
+<span id="id1"></span><h1>Thermodynamics<a class="headerlink" href="#thermodynamics" title="Permalink to this headline">¶</a></h1>
+<p>The structure of the zero-temperature equation of state in terms of
+densities comes from the First Law of Thermodynamics:</p>
+<div class="math" id="equation-full-first">
+<span class="eqno">(1)</span>\[\mathop{d \epsilon} = T \mathop{d s} + \frac{\epsilon + p}{n} \mathop{d n}\]</div>
+<p>where <span class="math">\(\epsilon\)</span> is the energy density, <span class="math">\(T\)</span> is the temperature,
+<span class="math">\(s\)</span> is the entropy, <span class="math">\(p\)</span> is pressure density, <span class="math">\(n\)</span> is number
+density. We have set the speed of light <span class="math">\(c=1\)</span> such that
+<span class="math">\(\epsilon\)</span> and <span class="math">\(p\)</span> are in the same units.</p>
+<p>We set <span class="math">\(\mathop{d s} = 0\)</span>, and we will also use the average mass per
+baryon <span class="math">\(m_b\)</span> to express in terms of the rest mass density
+<span class="math">\(\rho\)</span> which also has the units of <span class="math">\(\epsilon\)</span>.</p>
+<div class="math" id="equation-first">
+<span class="eqno">(2)</span>\[\mathop{d \epsilon} = \frac{\epsilon + p}{\rho} \mathop{d \rho}\]</div>
+<p>This implies a single-parameter equation of state, where we express
+thermodynamic quantities in terms of a single parameter, for example
+<span class="math">\(\epsilon(\rho)\)</span> and <span class="math">\(p(\rho)\)</span>; in fact, only one of these is
+required, as we can use the first law to determine one from the other. For
+example, given <span class="math">\(p(\rho)\)</span>, we can use the reformulation <a class="footnote-reference" href="#f1" id="id2">[1]</a> of <a href="#equation-first">(2)</a>
+as</p>
+<div class="math" id="equation-epsilonder">
+<span class="eqno">(3)</span>\[d\left(\frac{\epsilon}{\rho}\right) = - p  d\frac{1}{\rho},\]</div>
+<p>along with the surface boundary condition, to determine
+<span class="math">\(\epsilon(\rho)\)</span>.</p>
+<p>We will later make use of the specific enthalpy density <span class="math">\(h\)</span>,</p>
+<div class="math" id="equation-enthalpy">
+<span class="eqno">(4)</span>\[h = \frac{\epsilon + p}{\rho}.\]</div>
+<p>One can show <a class="footnote-reference" href="#f2" id="id3">[2]</a> for the single-parameter equation of state that:</p>
+<div class="math" id="equation-enthalphyder">
+<span class="eqno">(5)</span>\[\frac{ dh}{dp} = \frac{h}{\epsilon + p}.\]</div>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="f1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td><a class="reference internal" href="appendix-thermodynamics.html#apptherm1"><em>Energy density from pressure and rest mass density</em></a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="f2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td><a class="reference internal" href="appendix-thermodynamics.html#apptherm2"><em>Derivative form of enthalpy</em></a></td></tr>
+</tbody>
+</table>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="intro.html"
+                        title="previous chapter">Intro</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tov.html"
+                        title="next chapter">The TOV equations</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/eos.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tov.html" title="The TOV equations"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Intro"
+             >previous</a> |</li>
+        <li><a href="index.html">nsstruc 0.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Jocelyn Read.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
