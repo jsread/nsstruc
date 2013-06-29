@@ -4,6 +4,8 @@
 
 """
 from conversions import *
+import numpy as np
+import scipy
 
 import eos
 import tov
