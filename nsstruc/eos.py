@@ -40,7 +40,7 @@ class Eos:
 
         enthalpy: pseudoenthalpy as a function of pressure
 
-        range: a tuple of (enthalpy_low, eta_hi)
+        enthrange: a tuple of (enthalpy_low, enthalpy_high)
 
     From table filename, also defines:
 
@@ -53,7 +53,7 @@ class Eos:
         enthalpypoints: numerically integrated pseudoenthalpy
     
         """
-    def __init__(self, funcs=None, filename=None):
+    def __init__(self, funcs=None, enthrange=None, filename=None):
         if funcs:
             # just define the functions explicitly
             if filename: warnings.warn("given funcs; ignoring filename")
@@ -63,6 +63,10 @@ class Eos:
             self.energy = energy
             self.dprden= dprden
             self.enthalpy = enthalpy 
+            if enthrange:
+                self.enthrange = enthrange
+            else:
+                self.enthrange = (1e-40,3.0)
         elif filename:
             # load table
             table = np.loadtxt(filename)
@@ -88,7 +92,7 @@ class Eos:
             # we are assuming the lowest density point in the table is the
             # surface where pseudoenthalpy vanishes
             self.enthalpypoints = np.hstack((0.0, enthalpy))
-            self.range = (self.enthalpypoints[0],self.enthalpypoints[-1])
+            self.enthrange = (self.enthalpypoints[0],self.enthalpypoints[-1])
 
 
             smoothing = 0
@@ -150,15 +154,24 @@ class Eos:
             self.enthalpy = np.vectorize(enthalpy)
 
 
-def createpolytrope(p2, g):
-    ''' Create function set for EOS object using a reference pressure, specified
-        by  log10(p/c^2)  at rest mass density 10**14.7 and gamma, store in
-        generic piecewise polytrope format''' 
+def createpolytrope(p2, g, enthalpybounds=None):
+    ''' Create function set for EOS object using gamma and a reference pressure
+    p2, specified as log10(p/c^3 in g/cm^3), at rest mass density 10**14.7 also
+    in g/cm^3.
+
+    To invert enthalpy as a function of energy, bounds are required. Default
+    is (1e-40,2). Can specify tuple as enthalpybounds=(min,max) if the energies
+    you desire are outside this range.  ''' 
     g = float(g)
     z = p2 - g * 14.7 # Determine log K 
     K = 10**z
     n = 1 / (g - 1)
-    print( K, g)
+
+    if enthalpybounds:
+        (lowenth, highenth) = enthalpybounds
+    else:
+        (lowenth,highenth) = (1e-40,3.0)
+
     def density(enthalpy):
         '''rest mass density in g/cm^3 as a function of pseudoenthalpy'''
         eta = np.exp(enthalpy) - 1
@@ -191,7 +204,10 @@ def createpolytrope(p2, g):
                 return energy - (g + eta) / g * ( K * g * n / eta )**(-n) 
             else:
                 return 0
-        return optimize.zeros.brentq(diffen, 10**(-10), 5)
+        try:
+            return optimize.zeros.brentq(diffen, lowenth, highenth)
+        except ValueError:
+            return 0
     return (np.vectorize(density), np.vectorize(pressure),
             np.vectorize(energy),  np.vectorize(dprden), np.vectorize(enthalpy))
             
