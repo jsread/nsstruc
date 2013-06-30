@@ -17,12 +17,11 @@ class Eos:
     """ A class that defines cold equations of state for TOV and augmented TOV
     equations.
     
-    Current parameters: either a list of functions, or a data file
-    containing rho, 
+    Current parameters: either a tuple/list of functions, or a data file
+    containing rho (rest mass density), pressure density / c^2, and energy
+    density all in g/cm^3.
 
-    Based on eta = exp(enthalpy) - 1.0
-
-    dens, press, energy are in units of g/cm^3
+    density, pressure, and energy are returned in units of g/cm^3 
     (dens = number density in fm^-3 * m_b for m_b in conversions.py)
 
     enthalpy is dimensionless
@@ -154,7 +153,7 @@ class Eos:
             self.enthalpy = np.vectorize(enthalpy)
 
 
-def createpolytrope(p2, g, enthalpybounds=None):
+def polytropefuncs(p2, g, enthalpybounds=None):
     ''' Create function set for EOS object using gamma and a reference pressure
     p2, specified as log10(p/c^3 in g/cm^3), at rest mass density 10**14.7 also
     in g/cm^3.
@@ -211,23 +210,3 @@ def createpolytrope(p2, g, enthalpybounds=None):
     return (np.vectorize(density), np.vectorize(pressure),
             np.vectorize(energy),  np.vectorize(dprden), np.vectorize(enthalpy))
             
-
-def expandedparams(params):
-  """ for piecewise polytropes
-      given a parameter set of [[log rhodivs][log K][gamma]]
-      return a parameter set of [[ens][etas][K][gamma][a][n]]
-  """
-  Kis = 10**array(params[1])
-  rhois = 10**array(params[0])
-  gis = array(params[2])
-  ais = [0.0]
-  for i in range(len(rhois)-1):
-    ai = ais[i] + Kis[i] / (gis[i] - 1) * rhois[i+1]**(gis[i] - 1)  \
-          - Kis[i+1] / (gis[i+1] - 1) * rhois[i+1]**(gis[i+1] - 1)
-    ais.append(ai)
-  ais = array(ais)
-  etas = ais + Kis*gis/(gis-1)*rhois**(gis-1)
-  nis = 1/(gis - 1)
-  enis = ( (etas - ais) / (Kis * (nis + 1) ))**nis \
-       * ( 1 + (ais + nis* etas) / ( nis + 1) )
-  return vstack((enis, etas, Kis, gis, ais, nis))
