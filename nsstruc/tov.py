@@ -45,16 +45,20 @@ def profile(eos, energy_center , number=200, initr=0.001, energy_0=1e7):
     # central enthalpy
     enth_c = eos.enthalpy(energy_center)
 
-    # resolve core with linear spacing in enthalpy
-    linenths = np.linspace(enth_c, enth_c/10, number/2)[:-1]
+    # end the core spacing here 
+    enth_0 = eos.enthalpy(energy_center/10) 
 
+    # resolve core with linear spacing in enthalpy
+    linenths = np.linspace(enth_c, enth_0, number/2)[:-1]
+
+    # end the crust spacing here and jump to 0
+    enth_0 = eos.enthalpy(energy_0) 
     # resolve crust with log spacing in enthalpy
-    enth_0 = eos.enthalpy(energy_0) # end the crust spacing here and jump to 0
     logenths = np.logspace(np.log10(linenths[-1]),np.log10(enth_0),
-                           number/2+1)
+                           number/2+1)[1:]
 
     # set of enthalpies to calculate energy density, radius, and mass at
-    enths = np.hstack((np.array(linenths),np.array(logenths[1:]),np.array(0)))
+    enths = np.hstack((np.array(linenths),np.array(logenths),np.array(0)))
     # enths = np.linspace(enth_c, 0, number) # boring way for debugging
 
     # integrate the TOV equations specified in deriv above
@@ -119,7 +123,8 @@ def rotprofile(eos, energy_center , number=100, initr=0.001, energy_0=1e7):
 
     # resolve crust with log enth spacing
     enth_0 = eos.enthalpy(energy_0) # end the crust spacing here and jump to 0
-    logenths = np.logspace(np.log10(linenths[-1]),np.log10(enth_0), number+1)
+    logenths = np.logspace(np.log10(linenths[-1]),np.log10(enth_0),
+                           number/2+1)
 
     # set of enthalpies to calculate energy density, radius, and mass at
     enths = np.hstack((np.array(linenths),np.array(logenths[1:]),np.array(0)))
@@ -185,11 +190,12 @@ def tideprofile(eos, energy_center , number=200, initr=0.001, energy_0=1e7):
     init_rm = array([initr,initm,initm, 0.1* 2 * initr,0.1 *initr**2])
 
     # resolve core with linear spacing
-    linenths = np.linspace(enth_c, enth_c/10, number)[:-1]
+    linenths = np.linspace(enth_c, enth_c/10, number/2)[:-1]
 
     # resolve crust with log enth spacing
     enth_0 = eos.enthalpy(energy_0) # end the crust spacing here and jump to 0
-    logenths = np.logspace(np.log10(linenths[-1]),np.log10(enth_0), number+1)
+    logenths = np.logspace(np.log10(linenths[-1]),np.log10(enth_0),
+                           number/2 + 1)
 
     # set of enthalpies to calculate energy density, radius, and mass at
     enths = np.hstack((np.array(linenths),np.array(logenths[1:]),np.array(0)))
@@ -250,14 +256,14 @@ def energy_maxmass(eos, lowenergy, highenergy=None):
     maxprofile = profile(eos,maxen)[:,-1]
     return maxen, maxprofile[2]/Solarmass_km, maxprofile[1]
 
-def mrarray(eos, lowenergy, highenergy, number=200):
-    eps = logspace(log10(lowenergy),log10(highenergy),number)
+def mrarray(eos, lowenergy, highenergy, number=20):
+    eps = np.logspace(np.log10(lowenergy),np.log10(highenergy),number)
     table = []
     for ep_c in eps:
-        prof = profile(eos, ep_c, 100)
+        prof = profile(eos, ep_c)
         (en, rad, mass) = prof[:,-1]
         table.append((ep_c, mass/Solarmass_km,rad))
-    return array(table)
+    return np.array(table)
 
 
 def moment_of_inertia( rotprof_surface):
@@ -285,7 +291,7 @@ def properties_of_energy(eos,en):
     tidelambda = 2. / 3. * k2val * (rad / mass)**5.
     return (mass/Solarmass_km, rad, tidelambda, k2val)
 
-def lambdamarray(eos, lowenergy, highenergy,number):
+def lambdamarray(eos, lowenergy, highenergy, number):
     eps = logspace(log10(lowenergy),log10(highenergy),number)
     table = []
     for ep_c in eps:
@@ -294,5 +300,5 @@ def lambdamarray(eos, lowenergy, highenergy,number):
         k2val = k2(prof[:,-2])
         tidelambda = 2. / 3. * k2val * (rad / mass)**5.
         table.append((ep_c, mass/Solarmass_km, rad, tidelambda, k2val))
-  return array(table)
+    return array(table)
 

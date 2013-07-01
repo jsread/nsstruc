@@ -65,7 +65,7 @@ class Eos:
             if enthrange:
                 self.enthrange = enthrange
             else:
-                self.enthrange = (1e-40,3.0)
+                self.enthrange = (1e-40,2.0)
         elif filename:
             # load table
             table = np.loadtxt(filename)
@@ -91,72 +91,82 @@ class Eos:
             # we are assuming the lowest density point in the table is the
             # surface where pseudoenthalpy vanishes
             self.enthalpypoints = np.hstack((0.0, enthalpy))
-            self.enthrange = (self.enthalpypoints[0],self.enthalpypoints[-1])
+            # enthalpy range where sensibly defined by table
+            self.enthrange = (self.enthalpypoints[1],self.enthalpypoints[-1])
 
 
-            smoothing = 0
-            energyrep = interpolate.splrep(self.enthalpypoints, 
-                                            np.log10(self.energypoints), 
-                                            k=3, s=smoothing)
-            pressrep = interpolate.splrep(self.enthalpypoints, 
-                                            np.log10(self.pressurepoints), 
-                                            k=3, s=smoothing)
-
+            logpressure = interpolate.InterpolatedUnivariateSpline(
+                                            self.enthalpypoints,
+                                            np.log10(self.pressurepoints))
+            
             def pressure(enthalpy):
-                '''pressure over c^2 in g/cm^3 as a function of pseudoenthalpy
-                calculated from tabled energy and pressure and numerical
-                integration of pseudoenthalpy'''
-                return 10**(interpolate.splev(enthalpy, pressrep, der=0))
-            self.pressure = np.vectorize(pressure)
+                try:
+                    pr = 10**logpressure(enthalpy).astype(np.float32)
+                except:
+                    pr = 0
+                return pr
+            self.pressure = pressure
+#            self.pressure.__doc__='''pressure over c^2 in g/cm^3 as a
+#                      function of pseudoenthalpy; calculated from tabled
+#                      energy and pressure and numerical integration of
+#                      pseudoenthalpy'''
+            
+            logenergy = interpolate.InterpolatedUnivariateSpline(
+                                            self.enthalpypoints,
+                                            np.log10(self.energypoints))
             def energy(enthalpy):
-                '''energy density in g/cm^3 as a function of pseudoenthalpy
-                calculated from tabled energy and pressure and numerical
-                integration of pseudoenthalpy'''
-                return 10**(interpolate.splev(enthalpy, energyrep, der=0))
-            self.energy = np.vectorize(energy)
+                return 10**logenergy(enthalpy).astype(np.float32)
+            self.energy=energy
+
+#            self.energy.__doc__= '''energy density in g/cm^3 as a function
+#                      of pseudoenthalpy; calculated from tabled energy and
+#                      pressure and numerical integration of
+#                      pseudoenthalpy'''
 
             def dprden(enthalpy):
-                '''dimensionless derivative of pressure with respect to energy 
-                as a function of pseudoenthalpy; the speed of sound squared''' 
                 # use the derivatives of the interpolated energy and pressure
                 # interpolations are of log energy and log pressure
                 # so need to also calculate energy and pressure to convert
-                dlogen = interpolate.splev(enthalpy, energyrep, der=1)
-                dlogp = interpolate.splev(enthalpy, pressrep, der=1)
-                en = 10**interpolate.splev(enthalpy, energyrep, der=0)
-                pr = 10**interpolate.splev(enthalpy, pressrep, der=0)
+                dlogen = logenergy.derivatives(enthalpy)
+                dlogp = logpressure.derivatives(enthalpy)
+                en = float(10**logenergy(enthalpy))
+                pr = float(10**logpressure(enthalpy))
                 # these are not natural logs, but the base factors cancel 
                 return pr/en*dlogp/dlogen
-            self.dprden= np.vectorize(dprden)
+            self.dprden = dprden
+#            self.dprden.__doc__= '''dimensionless derivative of pressure
+#                      with respect to energy, as a function of
+#                      pseudoenthalpy; the speed of sound squared''' 
 
             # Using thermodynamically consistent density. Varies from the tabled
             # densities by ~1% due to the approximate integration of enthalpy
             # (or inconsistent tables)
             # TODO: option for using interpolated table density instead?
-            def density(enthalpy):
-                '''rest mass density in g/cm^3 as a function of pseudoenthalpy
-                calculated from tabled energy and pressure and numerical
-                integration of pseudoenthalpy'''
-                return ( 10**(interpolate.splev(enthalpy, pressrep, der=0)) 
-                        + 10**(interpolate.splev(enthalpy, energyrep, der=0))
-                        ) / np.exp(enthalpy)
-            self.density = np.vectorize(density)
+            def density(self, enthalpy):
+                 return ( 10**logenergy(enthalpy) +
+                         10**logpressure(enthalpy) ) / np.exp(enthalpy)
+#            self.density.__doc__ = '''rest mass density in g/cm^3 as a
+#                      function of pseudoenthalpy calculated from tabled
+#                      energy and pressure and numerical integration of
+#                      pseudoenthalpy'''
+ 
             
-            enthrep = interpolate.splrep(np.log10(self.energypoints),
-                                         self.enthalpypoints,
-                                         k=3, s=smoothing)
+            enthalpy_of_log = interpolate.InterpolatedUnivariateSpline(
+                                          np.log10(self.energypoints),
+                                          self.enthalpypoints)
             def enthalpy(energy):
-                '''pseudoenthalpy as a function of energy density in g/cm^3
-                calculated from tabled energy and pressure and numerical
-                integration of pseudoenthalpy'''
-                return interpolate.splev(np.log10(energy), enthrep)
-            self.enthalpy = np.vectorize(enthalpy)
+                return enthalpy_of_log(np.log10(energy))
+            self.enthalpy = enthalpy
+#            self.enthalpy.__doc__ = '''pseudoenthalpy as a function of
+#                      energy density in g/cm^3 calculated from tabled
+#                      energy and pressure and numerical integration of
+#                      pseudoenthalpy'''
 
 
 def polytropefuncs(p2, g, enthalpybounds=None):
     ''' Create function set for EOS object using gamma and a reference pressure
     p2, specified as log10(p/c^3 in g/cm^3), at rest mass density 10**14.7 also
-    in g/cm^3.
+    in g/cm^3. Typical values are ~ 13-14.
 
     To invert enthalpy as a function of energy, bounds are required. Default
     is (1e-40,2). Can specify tuple as enthalpybounds=(min,max) if the energies
@@ -169,20 +179,20 @@ def polytropefuncs(p2, g, enthalpybounds=None):
     if enthalpybounds:
         (lowenth, highenth) = enthalpybounds
     else:
-        (lowenth,highenth) = (1e-40,3.0)
+        (lowenth,highenth) = (1e-40,2.0)
 
     def density(enthalpy):
         '''rest mass density in g/cm^3 as a function of pseudoenthalpy'''
-        eta = np.exp(enthalpy) - 1
+        eta = max(np.exp(enthalpy) - 1,0)
         return (eta * (g - 1) / (K * g) )**(n)
     def pressure (enthalpy):
         '''energy density in g/cm^3 as a function of pseudoenthalpy'''
-        eta = np.exp(enthalpy) - 1
+        eta = max(np.exp(enthalpy) - 1,0)
         return K * ( eta * (g - 1) / ( K * g ) )**(n * g)
     def energy(enthalpy):
         '''energy density in g/cm^3 as a function of pseudoenthalpy'''
         # convert from pseudoenthalpy into parameter8 eta = specific enthalpy - 1
-        eta = np.exp(enthalpy) - 1
+        eta = max(np.exp(enthalpy) - 1,0)
         if (eta != 0):
             return (g + eta) / g * ( K * g * n / eta )**(-n)
         else:
@@ -190,23 +200,17 @@ def polytropefuncs(p2, g, enthalpybounds=None):
     def dprden(enthalpy):
         '''dimensionless derivative of pressure with respect to energy 
         as a function of pseudoenthalpy; the speed of sound squared''' 
-        eta = np.exp(enthalpy) - 1
+        eta = max(np.exp(enthalpy) - 1,0)
         if (eta != 0):
             return n * (1 + eta) / eta
         else:
-            return 0
+            return 1
     def enthalpy(energy):
         '''pseudoenthalpy as a function of energy density in g/cm^3'''
         # No nice analytic form
         def diffen(eta):
-            if (eta != 0):
-                return energy - (g + eta) / g * ( K * g * n / eta )**(-n) 
-            else:
-                return 0
-        try:
-            return optimize.zeros.brentq(diffen, lowenth, highenth)
-        except ValueError:
-            return 0
+            return energy - (g + eta) / g * ( K * g * n / eta )**(-n) 
+        return optimize.zeros.brentq(diffen, lowenth, highenth)
     return (np.vectorize(density), np.vectorize(pressure),
             np.vectorize(energy),  np.vectorize(dprden), np.vectorize(enthalpy))
             
