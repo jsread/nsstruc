@@ -22,7 +22,8 @@ def deriv(rm_vector, enthalpy, eos):
     dmdenth = 4 * np.pi * eos.energy(enthalpy)*Gcc * rad **2 * drdenth
     return np.array([drdenth,dmdenth])
 
-def profile(eos, energy_center , number=200, initr=0.001, energy_0=1e7):
+def profile(eos, energy_center , number=200, initr=0.001, energy_0=1e7,
+        rad_0=False):
     '''Calculate the enthalpy profile of a neutron star with equation of
     state eos and central energy density energy_center in g/cm^3
 
@@ -35,6 +36,9 @@ def profile(eos, energy_center , number=200, initr=0.001, energy_0=1e7):
         energy_0: energy density at which to stop resolving crust. This doesn't
             need to be tiny (and may cause problems if it is). Integration still
             goes to surface.
+
+        rad_0: Set true to calculate outer radius at energy_0 instead of at
+        formal zero enthalpy limit of EOS
     
     '''
 
@@ -58,7 +62,10 @@ def profile(eos, energy_center , number=200, initr=0.001, energy_0=1e7):
                            number/2+1)[1:]
 
     # set of enthalpies to calculate energy density, radius, and mass at
-    enths = np.hstack((np.array(linenths),np.array(logenths),np.array(0)))
+    if rad_0:
+        enths = np.hstack((np.array(linenths),np.array(logenths)))
+    else:
+        enths = np.hstack((np.array(linenths),np.array(logenths),np.array(0)))
     # enths = np.linspace(enth_c, 0, number) # boring way for debugging
 
     # integrate the TOV equations specified in deriv above
@@ -138,27 +145,27 @@ def rotprofile(eos, energy_center , number=100, initr=0.001, energy_0=1e7):
 def tidederiv(rm_vector, enthalpy, eos):
     (rad, mass, restmass, beta, h) = rm_vector
 
-    pr = eos.pressfunc(enthalpy) * Gcc
-    en = eos.energyfunc(enthalpy) * Gcc
+    pr = eos.pressure(enthalpy) * Gcc
+    en = eos.energy(enthalpy) * Gcc
     func = 1.0/eos.dprden(enthalpy)
 
     factor = rad - 2 * mass
-    coef = 4.0*pi
+    coef = 4.0*np.pi
 
-    drdenth =  - rad * factor / (mass + coef * rad**3 * pr) / (eta+1)
+    drdenth =  - rad * factor / (mass + coef * rad**3 * pr)
     dmdenth = coef * en * rad**2 * drdenth
     dbeta = 2 * drdenth *\
         ( h * ( \
-          (- 2. * pi * func * rad * (pr + en))/ factor + \
+          (- 2. * np.pi * func * rad * (pr + en))/ factor + \
           (2. * mass**2 + \
-            rad**2 * (3.0 + 2.0 * pi * rad**2 * \
-              ( pr * (16.0 * pi * pr * rad**2 - 9.0 ) - 5. * en ))\
-            + mass * ( - 6 * rad + 4 * pi * rad**3 * (13 *pr + 5*en) ) )\
+            rad**2 * (3.0 + 2.0 * np.pi * rad**2 * \
+              ( pr * (16.0 * np.pi * pr * rad**2 - 9.0 ) - 5. * en ))\
+            + mass * ( - 6 * rad + 4 * np.pi * rad**3 * (13 *pr + 5*en) ) )\
           / rad**2 / factor**2 )
-        + beta / rad / factor * ( mass - rad + 2 * pi * rad**3 * (en -
+        + beta / rad / factor * ( mass - rad + 2 * np.pi * rad**3 * (en -
           pr)))
     dh = beta * drdenth
-    return array([drdenth,dmdenth, dbeta, dh])
+    return np.array([drdenth,dmdenth, dbeta, dh])
 
 
 def tideprofile(eos, energy_center , number=200, initr=0.001, energy_0=1e7):
@@ -187,7 +194,7 @@ def tideprofile(eos, energy_center , number=200, initr=0.001, energy_0=1e7):
     # set up a core with small initial radius and mass
     initm = 4.0/3.0*np.pi*(initr)**3 * energy_center * Gcc
     # seed perturbation amplitude of 0.1
-    init_rm = array([initr,initm,initm, 0.1* 2 * initr,0.1 *initr**2])
+    init_rm = np.array([initr,initm,initm, 0.1* 2 * initr,0.1 *initr**2])
 
     # resolve core with linear spacing
     linenths = np.linspace(enth_c, enth_c/10, number/2)[:-1]
@@ -222,10 +229,7 @@ def energy_of_mass(eos, mass, lowenergy, highenergy=None):
     if highenergy == None:
         highenergy = eos.energy(eos.enthrange[1])
     def massdiff(x, eos, mass):
-        try:
-            return profile(eos, x)[2,-1] - mass*Solarmass_km
-        except: # In case we somehow get out of the bounds, fail gracefully
-            return 0
+        return profile(eos, x)[2,-1] - mass*Solarmass_km
     try:
         return optimize.brenth(massdiff, lowenergy, highenergy, (eos,mass))
     except RuntimeError:
@@ -279,7 +283,7 @@ def k2(tidalprof_surface):
     return 8. / 5. * C**5 * (1. - 2. * C)**2 * (2. + 2. * C * (y - 1.) - y) \
       / (2. * C * (6. - 3. * y + 3. * C * (5. * y - 8.)) \
       + 4. * C**3. * (13. - 11.*y + C * (3.*y - 2.) + 2. * C**2 * (1. + y)) \
-      + 3. * ( 1. - 2.*C)**2 * ( 2. - y + 2.*C * (y - 1.)) * log(1. - 2.*C))
+      + 3. * ( 1. - 2.*C)**2 * ( 2. - y + 2.*C * (y - 1.)) * np.log(1. - 2.*C))
 
 def properties_of_energy(eos,en):
     ''' given a central energy density in g/cm^3, output some relavant
@@ -292,13 +296,13 @@ def properties_of_energy(eos,en):
     return (mass/Solarmass_km, rad, tidelambda, k2val)
 
 def lambdamarray(eos, lowenergy, highenergy, number):
-    eps = logspace(log10(lowenergy),log10(highenergy),number)
+    eps = np.logspace(np.log10(lowenergy),np.log10(highenergy),number)
     table = []
     for ep_c in eps:
-        prof = tideprofile(eos, ep_c, 100)
+        prof = tideprofile(eos, ep_c)
         (en, rad, mass, restmass, beta, hfunc) = prof[:,-1]
         k2val = k2(prof[:,-2])
         tidelambda = 2. / 3. * k2val * (rad / mass)**5.
         table.append((ep_c, mass/Solarmass_km, rad, tidelambda, k2val))
-    return array(table)
+    return np.array(table)
 

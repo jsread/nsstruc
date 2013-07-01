@@ -49,6 +49,48 @@ One can show [#f2]_ for the single-parameter equation of state that:
   \frac{ dh}{dp} = \frac{h}{\epsilon + p}.
   :label: enthalphyder
 
+This enthalpy will vanish at the stellar surface, and given this known boundary
+value it is a convenient variable for solving the stellar structure equations.
+If we specify :math:`\epsilon(h)` and :math:`p(h)`, then we can determine
+:math:`\rho` using:
+
+.. math::
+  \rho = (\epsilon + p) e^{-h}.
+  :label: densidydef
+
+Polytropes
+==============
+
+Polytropes are defined using the equation of state
+
+.. math::
+  p = K \rho^\Gamma
+  :label: polytrope
+
+and the integral of :eq:`epsilondir` along with the condition that
+:math:`\epsilon \rightarrow \rho` as :math:`\rho \rightarrow 0` gives
+
+.. math::
+  \epsilon = \rho + \frac{K}{\Gamma - 1}\rho^{\Gamma} 
+  :label: polyeps
+
+The specific enthalpy is
+
+.. math::
+  h = 1 + \frac{K}{\Gamma - 1} \Gamma \rho^{\Gamma - 1}
+  :label: polyenth
+
+which allows the equations for :math:`{\rho, p, \epsilon}` to be inverted:
+
+.. math::
+  \rho &= \left(\frac{ (h-1) (\Gamma - 1)}{K \Gamma}\right)^{1 / (\Gamma - 1)}\\
+  p &= K \left(\frac{ (h-1) (\Gamma - 1)}{K \Gamma}
+                \right)^{\Gamma / (\Gamma - 1)}\\
+  \epsilon &= \left(1 + \frac{h-1}{\Gamma}\right) 
+        \left(\frac{ (h-1) (\Gamma - 1)}{K \Gamma}\right)^{1 / (\Gamma - 1)}\\
+  :label: entheos
+
+  
 .. rubric:: Footnotes
 
 .. [#f1] :ref:`apptherm1`
