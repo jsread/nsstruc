@@ -163,54 +163,54 @@ class Eos:
 #                      pseudoenthalpy'''
 
 
-def polytropefuncs(p2, g, enthalpybounds=None):
+def polytropefuncs(p_ref, g, enthalpybounds=None):
     ''' Create function set for EOS object using gamma and a reference pressure
-    p2, specified as log10(p/c^3 in g/cm^3), at rest mass density 10**14.7 also
+    p_ref, specified as log10(p/c^3 in g/cm^3), at rest mass density 10**14.7 also
     in g/cm^3. Typical values are ~ 13-14.
 
+    p = K rho ^ g ; rho is rest mass density
+
     To invert enthalpy as a function of energy, bounds are required. Default
-    is (1e-40,2). Can specify tuple as enthalpybounds=(min,max) if the energies
+    is (0,2). Can specify tuple as enthalpybounds=(min,max) if the energies
     you desire are outside this range.  ''' 
-    g = float(g)
-    z = p2 - g * 14.7 # Determine log K 
+    g = float(g) # enforce floating point math on g
+    z = p_ref - g * 14.7 # Determine log K by reference pressure p_ref
     K = 10**z
     n = 1 / (g - 1)
-
+    print(g,z, K, n)
     if enthalpybounds:
         (lowenth, highenth) = enthalpybounds
     else:
-        (lowenth,highenth) = (1e-40,2.0)
-
+        (lowenth,highenth) = (0,2.0)
     def density(enthalpy):
         '''rest mass density in g/cm^3 as a function of pseudoenthalpy'''
-        eta = max(np.exp(enthalpy) - 1,0)
-        return (eta * (g - 1) / (K * g) )**(n)
+        eta = np.exp(enthalpy) - 1.
+        return (eta / n / K / g)**(n)
     def pressure (enthalpy):
         '''energy density in g/cm^3 as a function of pseudoenthalpy'''
-        eta = max(np.exp(enthalpy) - 1,0)
-        return K * ( eta * (g - 1) / ( K * g ) )**(n * g)
+        eta = np.exp(enthalpy) - 1.
+        return K * ( eta / n /  K / g )**(n * g)
     def energy(enthalpy):
         '''energy density in g/cm^3 as a function of pseudoenthalpy'''
         # convert from pseudoenthalpy into parameter8 eta = specific enthalpy - 1
-        eta = max(np.exp(enthalpy) - 1,0)
+        eta = max(np.exp(enthalpy) - 1.,0.)
         if (eta != 0):
-            return (g + eta) / g * ( K * g * n / eta )**(-n)
+            return (1. + eta / g) * (eta / n / K / g )**n
         else:
-            return 0
+            return 0.
     def dprden(enthalpy):
         '''dimensionless derivative of pressure with respect to energy 
         as a function of pseudoenthalpy; the speed of sound squared''' 
-        eta = max(np.exp(enthalpy) - 1,0)
-        if (eta != 0):
-            return n * (1 + eta) / eta
-        else:
-            return 1
+        eta = max(np.exp(enthalpy) - 1.,0)
+        return eta / (1. + eta) / n 
     def enthalpy(energy):
         '''pseudoenthalpy as a function of energy density in g/cm^3'''
         # No nice analytic form
         def diffen(eta):
-            return energy - (g + eta) / g * ( K * g * n / eta )**(-n) 
-        return optimize.zeros.brentq(diffen, lowenth, highenth)
+            return energy - (1. + eta / g) * (eta * (g - 1.) / (K * g) )**n
+        higheta = np.exp(highenth) - 1.
+        eta = optimize.zeros.brentq(diffen,0.0, higheta)
+        return np.log(eta + 1.)
     return (np.vectorize(density), np.vectorize(pressure),
             np.vectorize(energy),  np.vectorize(dprden), np.vectorize(enthalpy))
             
