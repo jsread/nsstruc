@@ -284,15 +284,15 @@ def peicewise(lowp, p2, g1, g2, g3):
 
     # thermodynamic consistency term in energy density
     a = [0.0]
-    for i in range(len(rhois)-1):
-        ai = a[i] + K[i] / (g[i] - 1) * rhois[i+1]**(g[i] - 1)  \
+    for i in range(len(rhois)-1.):
+        ai = a[i] + K[i] / (g[i] - 1.) * rhois[i+1]**(g[i] - 1)  \
             - K[i+1] / (g[i+1] - 1) * rhois[i+1]**(g[i+1] - 1)
         a.append(ai)
     a = np.array(a)
 
     etas = a + K * g * n * rhois**(g-1)
-    ens = ( (etas - a) / K / g )**n \
-              * ( 1 + (a + n*etas) / ( n + 1) )
+    ens = ( (etas - a) (g - 1.)/ K / g )**n \
+              * ( 1 + a + (etas - a)/g)
     def density(enthalpy):
         eta = np.exp(enthalpy) - 1.
         i = etas.searchsorted(eta) - 1
