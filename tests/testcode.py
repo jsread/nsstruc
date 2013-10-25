@@ -1,3 +1,8 @@
+from eos import all
+from tov import all
+import matplotlib.pyplot as plt
+
+
 TestEOS = SpecifyCore(13.7,2.7,3.0,2.0)
 
 # what does a star look like with central energy density of 5e14 ?
